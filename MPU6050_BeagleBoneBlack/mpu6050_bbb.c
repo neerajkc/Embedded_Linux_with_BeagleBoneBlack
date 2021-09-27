@@ -34,20 +34,25 @@ int main(void)
 		   return -1;
 	}
 
+	mpu6050_init();
+
 	while(1)
 	{
-
-		mpu6050_init();
-
 		get_accl_data(accl_val_arr);
-		//get_gyro_data(gyro_val_arr); // TODO
+		get_gyro_data(gyro_val_arr);
 
 		/* convert raw readings to values relative to 'g' */
         accl_x = (double) accl_val_arr[0] / ACCL_FS_SENSITIVITY_0;
         accl_y = (double) accl_val_arr[1] / ACCL_FS_SENSITIVITY_0;
         accl_z = (double) accl_val_arr[2] / ACCL_FS_SENSITIVITY_0;
 
-        printf("%0.2f	%0.2f	%0.2f\n",accl_x, accl_y, accl_z);
+        /* convert gyro raw values in to  (deg/seconds) */
+        gyro_x = (double) gyro_val_arr[0] / GYRO_FS_SENSITIVITY_0;
+        gyro_y = (double) gyro_val_arr[1] / GYRO_FS_SENSITIVITY_0;
+        gyro_z = (double) gyro_val_arr[2] / GYRO_FS_SENSITIVITY_0;
+
+        printf("Accl (g)=> X:%.2f Y:%.2f Z:%.2f GYRO (dps)=> X:%.2f Y:%.2f Z:%.2f \n", \
+        		accl_x, accl_y, accl_z, gyro_x, gyro_y, gyro_z);
 
         usleep(50 * 1000);
 	}
@@ -63,8 +68,10 @@ void mpu6050_init()
     mpu6050_write(MPU6050_REG_POWER, 0x00);
     usleep(500);
 
-    // Adjust full scale values for accelerator
+    // Adjust full scale values for acceleration and gyro
     mpu6050_write(MPU6050_REG_ACCEL_CONFIG, 0x00);
+    usleep(500);
+    mpu6050_write(MPU6050_REG_GYRO_CONFIG, 0x00);
     usleep(500);
 }
 
@@ -131,3 +138,18 @@ void get_accl_data(short int *pBuffer)
 
 }
 
+
+
+/* read gyro x,y,z values in to the pBuffer */
+void get_gyro_data(short *pBuffer)
+{
+    char gyro_buffer[6];
+
+    //start reading from the base address of gyro values i.e MPU6050_REG_GYRO_X_HIGH
+    mpu6050_read(MPU6050_REG_GYRO_X_HIGH, gyro_buffer,6);
+
+    pBuffer[0] =  ( (gyro_buffer[0] << 8) +  gyro_buffer[1] );
+    pBuffer[1] =  ( (gyro_buffer[2] << 8) +  gyro_buffer[3] );
+    pBuffer[2] =  ( (gyro_buffer[4] << 8) +  gyro_buffer[5] );
+
+}
